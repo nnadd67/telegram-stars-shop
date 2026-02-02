@@ -1,14 +1,7 @@
-// netlify/functions/verify-admin.js
-// Проверка авторизации администратора
-
-/**
- * Основная функция Netlify
- */
 exports.handler = async (event) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
     };
 
@@ -17,65 +10,39 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers,
-            body: JSON.stringify({ error: 'Method not allowed' })
-        };
+        return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
     }
 
     try {
-        const { password } = JSON.parse(event.body);
-
-        if (!password) {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ error: 'Пароль не указан' })
-            };
+        if (!event.body) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'No data received' }) };
         }
 
-        // Проверка пароля
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const data = JSON.parse(event.body);
+        const password = data.password;
 
-        if (!adminPassword) {
-            console.error('ADMIN_PASSWORD не настроен в окружении');
+        // Пароль: либо из настроек, либо резервный
+        const CORRECT_PASSWORD = process.env.ADMIN_PASSWORD || 'safiyevT7';
+
+        if (password && String(password).trim() === CORRECT_PASSWORD) {
             return {
-                statusCode: 500,
+                statusCode: 200,
                 headers,
-                body: JSON.stringify({ error: 'Сервер не настроен' })
+                body: JSON.stringify({ success: true, token: 'session_ok' })
             };
-        }
-
-        if (password !== adminPassword) {
-            console.log('Неудачная попытка входа');
+        } else {
             return {
                 statusCode: 401,
                 headers,
-                body: JSON.stringify({ error: 'Неверный пароль' })
+                body: JSON.stringify({ success: false, error: 'Неверный пароль' })
             };
         }
-
-        // Успешная авторизация
-        console.log('Успешный вход администратора');
-
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                success: true,
-                message: 'Авторизация успешна',
-                token: password, // В продакшене использовать JWT
-                expiresIn: 3600 // 1 час
-            })
-        };
-
     } catch (error) {
-        console.error('Ошибка авторизации:', error);
+        console.error('Verify Auth Error:', error);
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: 'Внутренняя ошибка сервера' })
+            body: JSON.stringify({ success: false, error: error.message })
         };
     }
 };

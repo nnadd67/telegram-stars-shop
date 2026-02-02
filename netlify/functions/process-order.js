@@ -147,78 +147,69 @@ exports.handler = async (event) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
+    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+
+    // 1. АНТИ-СПАМ (Rate Limiting)
+    const clientIP = event.headers['client-ip'] || event.headers['x-forwarded-for'] || 'unknown';
+    const now = Date.now();
+
+    if (requestLog.has(clientIP)) {
+        const lastRequest = requestLog.get(clientIP);
+
+        // Если прошло меньше минуты
+        if (now - lastRequest < RATE_LIMIT_TIME) {
+            console.log(`SPAM BLOCKED: ${clientIP}`);
+            return {
+                statusCode: 429,
+                body: JSON.stringify({ success: false, error: 'Слишком много запросов. Подождите 1 минуту.' })
+            };
+        }
+    }
+    // Записываем время запроса
+    requestLog.set(clientIP, now);
 
     try {
         const data = JSON.parse(event.body);
-        console.log('📥 Новый заказ:', data);
 
-        // Валидация обязательных полей
-        const { telegramUsername, stars, amount, paymentMethod, screenshot } = data;
-
-        if (!telegramUsername || !stars || !amount) {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({
-                    error: 'Заполните все обязательные поля',
-                    fields: { telegramUsername, stars, amount }
-                })
-            };
+        // Валидация
+        if (!data.telegramUsername || !data.stars || !data.amount) {
+            return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Неверные данные' }) };
         }
 
-        // Валидация username
-        const usernamePattern = /^[a-zA-Z0-9_]{5,32}$/;
-        const cleanUsername = telegramUsername.replace('@', '');
+        const orderId = `ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-        if (!usernamePattern.test(cleanUsername)) {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ error: 'Некорректный Telegram username' })
-            };
-        }
-
-        // Генерация ID заказа
-        const orderId = generateOrderId();
-
-        // Создание объекта заказа
         const order = {
             orderId,
-            telegramUsername: cleanUsername,
-            stars: parseInt(stars),
-            amount: parseFloat(amount),
-            paymentMethod: paymentMethod || 'Перевод на карту',
-            screenshot: screenshot || null,
+            telegramUsername: data.telegramUsername.replace('@', ''),
+            stars: data.stars,
+            amount: data.amount,
+            screenshot: data.screenshot, // base64
+            paymentMethod: data.paymentMethod,
             status: 'pending',
             createdAt: new Date().toISOString()
         };
 
-        console.log('✅ Заказ создан:', orderId);
+        // Сохраняем заказ в кэш (импорт из webhook)
+        // В реальном serverless это сложно, поэтому мы просто надеемся что инстанс жив,
+        // ИЛИ просто отправляем данные в телеграм, где они и будут "храниться" в чате.
+        // Для кнопок нам нужно, чтобы webhook знал о заказе.
+        try {
+            const webhook = require('./telegram-webhook');
+            webhook.ordersCache.push(order);
+        } catch (e) {
+            console.error('Ошибка сохранения в кэш:', e);
+        }
 
-        // Отправляем уведомление админу в Telegram с кнопками
-        const adminNotification = await notifyAdminNewOrder(order);
-        console.log('📤 Уведомление админу:', adminNotification);
-
-        // Уведомляем пользователя
-        await notifyUser(cleanUsername, orderId, order.stars);
+        // Отправляем уведомление админу
+        await sendTelegramNotify(order);
 
         return {
             statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                success: true,
-                orderId,
-                message: 'Заказ успешно создан! Ожидайте подтверждения.',
-                estimatedTime: '5-15 минут'
-            })
+            body: JSON.stringify({ success: true, orderId: orderId })
         };
 
     } catch (error) {
-        console.error('❌ Ошибка обработки заказа:', error);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ error: 'Внутренняя ошибка сервера' })
-        };
+        console.error('Error:', error);
+        return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
     }
 };

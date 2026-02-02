@@ -46,9 +46,12 @@ async function loadPackages() {
         packages = [
             { id: 1, stars: 50, price: 14000, desc: "Test Pack" },
             { id: 2, stars: 100, price: 27000, desc: "Starter Pack" },
+            { id: 7, stars: 200, price: 51000, desc: "Выгодный набор" },
             { id: 3, stars: 250, price: 65000, desc: "Popular Choice", popular: true },
+            { id: 8, stars: 300, price: 73000, desc: "Золотая середина" },
             { id: 4, stars: 500, price: 125000, desc: "Sponsor Pack" },
-            { id: 5, stars: 1000, price: 250000, desc: "Ultimate", popular: true }
+            { id: 5, stars: 1000, price: 250000, desc: "Ultimate", popular: true },
+            { id: 6, stars: 3000, price: 730000, desc: "Максимальная выгода", popular: true }
         ];
     }
 
