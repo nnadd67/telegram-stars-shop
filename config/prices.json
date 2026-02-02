@@ -1,0 +1,47 @@
+{
+  "currency": "UZS",
+  "payment_method": "transfer",
+  "last_updated": "2026-02-02",
+  "packages": [
+    {
+      "id": 1,
+      "stars": 50,
+      "price": 14000,
+      "discount_percent": 0,
+      "popular": false,
+      "description": "Тестовый пакет"
+    },
+    {
+      "id": 2,
+      "stars": 100,
+      "price": 27000,
+      "discount_percent": 0,
+      "popular": false,
+      "description": "Начальный пакет"
+    },
+    {
+      "id": 3,
+      "stars": 250,
+      "price": 65000,
+      "discount_percent": 0,
+      "popular": true,
+      "description": "Самый популярный"
+    },
+    {
+      "id": 4,
+      "stars": 500,
+      "price": 125000,
+      "discount_percent": 0,
+      "popular": false,
+      "description": "Для активных пользователей"
+    },
+    {
+      "id": 5,
+      "stars": 1000,
+      "price": 250000,
+      "discount_percent": 0,
+      "popular": true,
+      "description": "Максимальная выгода"
+    }
+  ]
+}

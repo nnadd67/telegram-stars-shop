@@ -1,0 +1,44 @@
+[build]
+  command = "npm run build"
+  functions = "netlify/functions"
+  publish = "public"
+
+[dev]
+  functions = "netlify/functions"
+  publish = "public"
+  port = 8888
+  targetPort = 3000
+
+[[headers]]
+  for = "/**"
+  [headers.values]
+    Content-Type = "text/html; charset=utf-8"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "*.json"
+  [headers.values]
+    Content-Type = "application/json; charset=utf-8"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Content-Type = "text/javascript; charset=utf-8"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Content-Type = "text/css; charset=utf-8"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[env]
+  NODE_ENV = "production"

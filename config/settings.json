@@ -1,0 +1,26 @@
+{
+  "app_name": "Telegram Stars Shop",
+  "app_version": "1.0.0",
+  "currency": "UZS",
+  "timezone": "Asia/Tashkent",
+  "language": "ru",
+  "supported_languages": ["ru", "uz"],
+  "order_expiration_hours": 24,
+  "max_screenshot_size_mb": 10,
+  "allowed_image_formats": ["jpg", "jpeg", "png", "webp"],
+  "notification_settings": {
+    "email_notifications": false,
+    "telegram_notifications": true,
+    "sms_notifications": false
+  },
+  "security": {
+    "enable_2fa": false,
+    "password_min_length": 8,
+    "session_timeout_minutes": 30,
+    "rate_limit_requests_per_minute": 60
+  },
+  "telegram_bot": {
+    "commands": ["/start", "/help", "/orders", "/status"],
+    "inline_buttons": ["confirm", "reject", "details", "resend"]
+  }
+}

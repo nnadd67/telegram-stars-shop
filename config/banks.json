@@ -1,0 +1,16 @@
+{
+  "banks": [
+    {
+      "id": 1,
+      "name": "Humo",
+      "card_number": "9860141700008007",
+      "card_display": "9860 1417 **** 8007",
+      "owner": "Safiyev Temur",
+      "owner_alt": "Safiyev T.",
+      "is_active": true,
+      "commission_percent": 1.5,
+      "description": "Humo debit card"
+    }
+  ],
+  "instructions": "Use the card number provided to send payment. Screenshot proof required."
+}

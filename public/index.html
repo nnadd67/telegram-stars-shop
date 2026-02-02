@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Telegram Stars Shop Uzbekistan">
+    <meta name="theme-color" content="#0088cc">
+    <title>Telegram Stars Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">⭐</span>
+                    <span class="logo-text">Telegram Stars</span>
+                </div>
+                <nav class="nav">
+                    <a href="#packages" class="nav-link">Пакеты</a>
+                    <a href="#order" class="nav-link">Заказать</a>
+                    <a href="#faq" class="nav-link">Вопросы</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main">
+            <!-- Герой секция -->
+            <section class="hero">
+                <h1 class="hero-title">Купить Telegram Stars</h1>
+                <p class="hero-subtitle">Моментальная покупка Stars через узбекские карты</p>
+            </section>
+
+            <!-- Блок пакетов -->
+            <section class="packages" id="packages">
+                <h2 class="section-title">Выберите пакет Stars</h2>
+                <div class="packages-grid" id="packagesGrid">
+                    <!-- Динамически загружается из prices.json -->
+                    <div class="loading">Загрузка пакетов...</div>
+                </div>
+            </section>
+
+            <!-- Форма заказа -->
+            <section class="order-section" id="order">
+                <h2 class="section-title">Оформить заказ</h2>
+                <div class="order-container">
+                    <form class="order-form" id="orderForm">
+                        <!-- Выбранный пакет -->
+                        <div class="form-group">
+                            <label for="selectedPackage">Выбранный пакет Stars *</label>
+                            <div class="selected-package-display">
+                                <span id="selectedPackageInfo">Выберите пакет выше</span>
+                            </div>
+                            <input type="hidden" id="selectedPackage" name="packageId" required>
+                            <input type="hidden" id="selectedStars" name="stars">
+                            <input type="hidden" id="selectedPrice" name="price">
+                        </div>
+
+                        <!-- Telegram Username -->
+                        <div class="form-group">
+                            <label for="telegramUsername">Ваш Telegram username *</label>
+                            <div class="input-group">
+                                <span class="input-prefix">@</span>
+                                <input type="text" id="telegramUsername" name="telegramUsername" placeholder="nik"
+                                    pattern="[a-zA-Z0-9_]{5,32}" required>
+                            </div>
+                            <small>Например: @my_username (5-32 символов, только буквы, цифры, подчёркивания)</small>
+                        </div>
+
+                        <!-- Количество Stars -->
+                        <div class="form-group">
+                            <label for="starsAmount">Количество Stars *</label>
+                            <input type="number" id="starsAmount" name="starsAmount" readonly class="readonly-input">
+                            <small>Автоматически заполняется при выборе пакета</small>
+                        </div>
+
+                        <!-- Сумма к оплате -->
+                        <div class="form-group">
+                            <label for="paymentAmount">Сумма к оплате (UZS) *</label>
+                            <div class="price-display">
+                                <input type="number" id="paymentAmount" name="paymentAmount" readonly
+                                    class="readonly-input">
+                                <span class="currency-badge">сум</span>
+                            </div>
+                            <small>Автоматически рассчитывается</small>
+                        </div>
+
+                        <!-- Способ оплаты -->
+                        <div class="form-group">
+                            <label for="paymentMethod">Способ оплаты *</label>
+                            <select id="paymentMethod" name="paymentMethod" required>
+                                <option value="">-- Выберите способ оплаты --</option>
+                                <!-- Динамически загружается из banks.json -->
+                            </select>
+                        </div>
+
+                        <!-- Информация о карте оплаты -->
+                        <div class="form-group payment-info-group" id="paymentInfoGroup" style="display: none;">
+                            <div class="payment-card" id="paymentCardInfo"></div>
+                        </div>
+
+                        <!-- Скриншот платежа -->
+                        <div class="form-group">
+                            <label>Скриншот квитанции оплаты *</label>
+                            <div class="file-upload">
+                                <div class="upload-area" id="uploadArea">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text">
+                                        <p>Перетащите изображение сюда</p>
+                                        <p class="upload-or">или</p>
+                                        <button type="button" class="upload-button">Выберите файл</button>
+                                    </div>
+                                    <input type="file" id="screenshotInput" name="screenshot" accept="image/*" required
+                                        style="display: none;">
+                                </div>
+                                <div class="upload-preview" id="uploadPreview" style="display: none;">
+                                    <img id="previewImage" src="" alt="Preview">
+                                    <button type="button" class="remove-image" id="removeImage">✕ Удалить</button>
+                                </div>
+                            </div>
+                            <small>Максимум 10 МБ, формат: JPG, PNG, WebP</small>
+                        </div>
+
+                        <!-- Номер заказа -->
+                        <div class="form-group">
+                            <label>Номер вашего заказа</label>
+                            <div class="order-number-display">
+                                <code id="orderNumber">Будет сгенерирован</code>
+                                <button type="button" class="copy-button" id="copyOrderNumber"
+                                    title="Копировать">📋</button>
+                            </div>
+                            <small>Сохраните этот номер и используйте для отслеживания заказа</small>
+                        </div>
+
+                        <!-- Согласие -->
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                                <span>Я согласен с условиями и понимаю, что возврат невозможен</span>
+                            </label>
+                        </div>
+
+                        <!-- Кнопка отправки -->
+                        <button type="submit" class="submit-button" id="submitButton">
+                            <span>Отправить заказ</span>
+                            <span class="loading-spinner" id="loadingSpinner" style="display: none;">⏳</span>
+                        </button>
+                    </form>
+
+                    <!-- Статус заказа -->
+                    <div class="order-status" id="orderStatus" style="display: none;">
+                        <div class="status-card" id="statusCard"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section class="faq" id="faq">
+                <h2 class="section-title">Часто задаваемые вопросы</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Как долго ждать получения Stars?</span>
+                            <span class="faq-icon">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Обычно Stars начисляются в течение 5-15 минут после подтверждения платежа. В редких
+                                случаях может занять до 30 минут.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Какие гарантии?</span>
+                            <span class="faq-icon">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Гарантируем возврат денег при неудачной операции. Мы работаем официально через Fragment
+                                API.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Что делать, если Stars не поступили?</span>
+                            <span class="faq-icon">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Напишите нашему боту в Telegram с номером заказа. Мы оперативно решим вопрос.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Безопасны ли мои платежные данные?</span>
+                            <span class="faq-icon">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Да. Скриншот используется только для проверки платежа и удаляется автоматически.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Есть ли лимиты на покупку Stars?</span>
+                            <span class="faq-icon">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Лимитов нет. Вы можете покупать любое количество пакетов. Stars — это виртуальная валюта.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Уведомления -->
+        <div class="notifications" id="notifications"></div>
+
+        <!-- Модальное окно для статуса -->
+        <div class="modal" id="statusModal">
+            <div class="modal-content">
+                <button class="modal-close" id="closeModal">✕</button>
+                <div id="modalBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2024 Telegram Stars Shop | Узбекистан</p>
+        <p class="footer-links">
+            <a href="#privacy">Политика конфиденциальности</a> |
+            <a href="#terms">Условия использования</a>
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

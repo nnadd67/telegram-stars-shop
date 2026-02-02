@@ -1,0 +1,31 @@
+{
+  "name": "telegram-stars-shop",
+  "version": "1.0.0",
+  "description": "Telegram Stars Shop - Buy Stars in Uzbekistan",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "netlify dev",
+    "build": "echo 'Building...'",
+    "deploy": "netlify deploy --prod"
+  },
+  "keywords": [
+    "telegram",
+    "stars",
+    "shop",
+    "uzbekistan",
+    "payment"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "node-fetch": "^2.6.11",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "netlify-cli": "^12.0.0"
+  }
+}

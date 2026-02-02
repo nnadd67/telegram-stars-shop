@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Drip Donate - Telegram Stars</title>
+    <style>
+        :root {
+            --primary-color: #0088cc;
+            --primary-dark: #0074aa;
+            --success-color: #4CAF50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-dark: #212529;
+            --text-light: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+        }
+
+        .logout-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #d32f2f;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-card.success {
+            border-left-color: var(--success-color);
+        }
+
+        .stat-card.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .filters {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .orders-table {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light-bg);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background-color: rgba(0, 136, 204, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 152, 0, 0.2);
+            color: #f57f17;
+        }
+
+        .status-badge.confirmed {
+            background: rgba(76, 175, 80, 0.2);
+            color: #2e7d32;
+        }
+
+        .status-badge.rejected {
+            background: rgba(244, 67, 54, 0.2);
+            color: #c62828;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn-confirm {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .btn-reject {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #da190b;
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: var(--primary-dark);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .modal-close:hover {
+            color: var(--text-dark);
+        }
+
+        .order-details {
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--light-bg);
+            border-radius: 6px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .screenshot-preview {
+            margin: 20px 0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .screenshot-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .action-buttons .confirm {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .action-buttons .confirm:hover {
+            background: #45a049;
+        }
+
+        .action-buttons .reject {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .action-buttons .reject:hover {
+            background: #da190b;
+        }
+
+        .action-buttons .cancel {
+            background: var(--border-color);
+            color: var(--text-dark);
+        }
+
+        .action-buttons .cancel:hover {
+            background: #c2c2c2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .login-container h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--light-bg);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .filter-group select,
+            .filter-group input {
+                width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .actions {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ����� ����� -->
+    <div class="login-container" id="loginContainer">
+        <h1>?? login to admin panel</h1>
+        <div class="error-message" id="errorMessage"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="login-btn">�����</button>
+        </form>
+    </div>
+
+    <!-- �������� ������ (������ �� �����) -->
+    <div class="container" id="adminPanel" style="display: none;">
+        <div class="header">
+            <h1> Admin Panel - Telegram Stars</h1>
+            <button class="logout-btn" id="logoutBtn">logout</button>
+        </div>
+
+        <!-- ���������� -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">total orders</div>
+                <div class="stat-value" id="totalOrders">0</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-label">pending orders</div>
+                <div class="stat-value" id="pendingOrders">0</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-label">confirmed orders</div>
+                <div class="stat-value" id="confirmedOrders">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">total revenue</div>
+                <div class="stat-value" id="totalRevenue">0</div>
+            </div>
+        </div>
+
+        <!-- ������� -->
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filterStatus">status</label>
+                <select id="filterStatus">
+                    <option value="">all</option>
+                    <option value="pending">pending</option>
+                    <option value="confirmed">confirmed</option>
+                    <option value="rejected">rejected</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterSearch"><search></search></label>
+                <input type="text" id="filterSearch" placeholder="Telegram username to search">
+            </div>
+            <div class="filter-group">
+                <button id="refreshBtn" class="btn btn-view">?? refresh</button>
+            </div>
+        </div>
+
+        <!-- ������� ������� -->
+        <div class="orders-table">
+            <table id="ordersTable">
+                <thead>
+                    <tr>
+                    <th>order id</th>
+                        <th>Telegram</th>
+                        <th>Stars</th>
+                        <th>price</th>
+                        <th>payment method</th>
+                        <th>status</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersList">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p style="margin-top: 15px; color: var(--text-light);">loading orders...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">??</div>
+           <h3>no orders found</h3>
+            <p>no orders found</p>
+        </div>
+    </div>
+
+    <!-- ��������� ���� ��� ��������� ������ -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal">?</button>
+            <h2 id="orderTitle">order details</h2>
+            
+            <div class="order-details" id="orderDetails"></div>
+
+            <div class="screenshot-preview" id="screenshotContainer" style="display: none;">
+                <h3 style="margin-bottom: 10px;"> screenshot</h3>
+                <img id="screenshotImage" src="" alt="Screenshot">
+            </div>
+
+            <div class="action-buttons" id="actionButtons"></div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
