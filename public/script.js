@@ -1,617 +1,183 @@
-/* ==================== КОНФИГУРАЦИЯ ==================== */
+п»ї/* Telegram Stars Shop - Premium Script */
 
+// РРєРѕРЅРєРё (SVG)
+const ICONS = {
+    star: '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+    upload: '<svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><path fill="#ffffff" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+};
+
+// РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ
 const CONFIG = {
-    API_BASE_URL: '/.netlify/functions',
-    PRICES_FILE: '/config/prices.json',
-    BANKS_FILE: '/config/banks.json',
-    SETTINGS_FILE: '/config/settings.json',
+    API_URL: '/.netlify/functions/process-order',
+    PRICES_URL: '/.netlify/functions/telegram-webhook' // GET Р·Р°РїСЂРѕСЃ РІРѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅС‹
 };
 
-const STORAGE_KEYS = {
-    CURRENT_ORDER: 'currentOrder',
-    USER_ORDERS: 'userOrders',
+const state = {
+    packages: [],
+    selected: null,
+    file: null
 };
-
-/* ==================== ИНИЦИАЛИЗАЦИЯ ==================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('?? Инициализация приложения...');
-    
-    await loadPrices();
-    await loadBanks();
-    setupEventListeners();
-    restoreOrderState();
-    
-    console.log('? Приложение инициализировано');
+    await loadPackages();
+    setupEvents();
+
+    // РРєРѕРЅРєР° Р·Р°РіСЂСѓР·РєРё
+    document.querySelector('.upload-icon').innerHTML = ICONS.upload;
 });
 
-/* ==================== ЗАГРУЗКА ДАННЫХ ==================== */
+async function loadPackages() {
+    let packages = [];
 
-/**
- * Загружает пакеты Stars и выводит их на странице
- */
-async function loadPrices() {
     try {
-        const response = await fetch(CONFIG.PRICES_FILE);
-        const data = await response.json();
-        renderPackages(data.packages);
-    } catch (error) {
-        console.error('? Ошибка при загрузке цен:', error);
-        showNotification('Ошибка при загрузке пакетов', 'error');
+        // РџС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ Р°РєС‚СѓР°Р»СЊРЅС‹Рµ С†РµРЅС‹ РѕС‚ Р±РѕС‚Р°
+        const res = await fetch(CONFIG.PRICES_URL);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.packages) packages = data.packages;
+        }
+    } catch (e) {
+        console.warn('API С†РµРЅ РЅРµРґРѕСЃС‚СѓРїРЅРѕ, РёСЃРїРѕР»СЊР·СѓРµРј СЂРµР·РµСЂРІ');
     }
-}
 
-/**
- * Загружает методы оплаты и заполняет select
- */
-async function loadBanks() {
-    try {
-        const response = await fetch(CONFIG.BANKS_FILE);
-        const data = await response.json();
-        renderPaymentMethods(data.payment_methods);
-    } catch (error) {
-        console.error('? Ошибка при загрузке банков:', error);
-        showNotification('Ошибка при загрузке методов оплаты', 'error');
+    // Р•СЃР»Рё API РЅРµ РѕС‚РІРµС‚РёР», РёСЃРїРѕР»СЊР·СѓРµРј СЂРµР·РµСЂРІ
+    if (packages.length === 0) {
+        packages = [
+            { id: 1, stars: 50, price: 14000, desc: "Test Pack" },
+            { id: 2, stars: 100, price: 27000, desc: "Starter Pack" },
+            { id: 3, stars: 250, price: 65000, desc: "Popular Choice", popular: true },
+            { id: 4, stars: 500, price: 125000, desc: "Sponsor Pack" },
+            { id: 5, stars: 1000, price: 250000, desc: "Ultimate", popular: true }
+        ];
     }
-}
 
-/**
- * Отрисовывает пакеты Stars на странице
- */
-function renderPackages(packages) {
-    const packagesGrid = document.getElementById('packagesGrid');
-    packagesGrid.innerHTML = '';
+    const grid = document.getElementById('packagesGrid');
+    grid.innerHTML = '';
 
     packages.forEach(pkg => {
-        const card = document.createElement('div');
-        card.className = 'package-card';
-        card.dataset.packageId = pkg.id;
-        card.dataset.stars = pkg.stars;
-        card.dataset.price = pkg.uzs_price;
-
-        let badgeHTML = '';
-        if (pkg.discount_percent > 0) {
-            badgeHTML = `<div class="package-badge">-${pkg.discount_percent}%</div>`;
-        }
-        if (pkg.popular) {
-            badgeHTML = `<div class="package-badge package-popular">ТОП</div>`;
-        }
-
-        card.innerHTML = `
-            ${badgeHTML}
-            <div class="package-stars">? ${pkg.stars}</div>
-            <div class="package-description">${pkg.description}</div>
-            <div class="package-price">${formatNumber(pkg.uzs_price)} сум</div>
-            <button type="button" class="package-button">Выбрать</button>
+        const el = document.createElement('div');
+        el.className = `package-card ${pkg.popular ? 'popular' : ''}`;
+        el.innerHTML = `
+            ${pkg.popular ? '<div class="popular-badge">HIT</div>' : ''}
+            <div class="stars-icon">${ICONS.star}</div>
+            <div class="price">${pkg.stars} Stars</div>
+            <div class="desc">${pkg.desc}</div>
+            <div class="price" style="font-size: 18px; margin-top: 15px; color: #fff;">${formatPrice(pkg.price)} UZS</div>
         `;
 
-        card.addEventListener('click', () => selectPackage(pkg));
-        packagesGrid.appendChild(card);
+        el.onclick = () => selectPackage(pkg, el);
+        grid.appendChild(el);
     });
 }
 
-/**
- * Отрисовывает методы оплаты в select
- */
-function renderPaymentMethods(methods) {
-    const select = document.getElementById('paymentMethod');
-    
-    methods.forEach(method => {
-        const option = document.createElement('option');
-        option.value = method.id;
-        option.textContent = method.name;
-        select.appendChild(option);
-    });
-}
+function selectPackage(pkg, el) {
+    state.selected = pkg;
+    document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
 
-/* ==================== РАБОТА С ПАКЕТАМИ ==================== */
-
-/**
- * Выбирает пакет Stars
- */
-function selectPackage(pkg) {
-    // Убираем класс selected со всех карт
-    document.querySelectorAll('.package-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-
-    // Добавляем класс selected к выбранной карте
-    const selectedCard = document.querySelector(`[data-package-id="${pkg.id}"]`);
-    selectedCard?.classList.add('selected');
-
-    // Заполняем скрытые поля
     document.getElementById('selectedPackage').value = pkg.id;
-    document.getElementById('selectedStars').value = pkg.stars;
-    document.getElementById('selectedPrice').value = pkg.uzs_price;
-
-    // Обновляем информацию о пакете
-    document.getElementById('selectedPackageInfo').textContent = 
-        `${pkg.stars} Stars - ${formatNumber(pkg.uzs_price)} сум`;
-
-    // Обновляем поля формы
     document.getElementById('starsAmount').value = pkg.stars;
-    document.getElementById('paymentAmount').value = formatNumber(pkg.uzs_price);
+    document.getElementById('paymentAmount').value = pkg.price;
+    document.getElementById('selectedInfo').innerText = `${pkg.stars} Stars - ${formatPrice(pkg.price)} UZS`;
 
-    // Генерируем номер заказа
-    generateOrderNumber();
-
-    // Прокручиваем к форме
-    document.getElementById('order').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('orderForm').scrollIntoView({ behavior: 'smooth' });
 }
 
-/* ==================== РАБОТА С НОМЕРОМ ЗАКАЗА ==================== */
+function setupEvents() {
+    const dropArea = document.getElementById('uploadArea');
+    const input = document.getElementById('screenshotInput');
 
-/**
- * Генерирует уникальный номер заказа
- */
-function generateOrderNumber() {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const orderNumber = `ORDER-${timestamp}-${random}`;
-    
-    document.getElementById('orderNumber').textContent = orderNumber;
-    
-    // Сохраняем в localStorage
-    const currentOrder = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_ORDER) || '{}');
-    currentOrder.orderNumber = orderNumber;
-    localStorage.setItem(STORAGE_KEYS.CURRENT_ORDER, JSON.stringify(currentOrder));
+    dropArea.onclick = () => input.click();
 
-    return orderNumber;
-}
+    input.onchange = (e) => {
+        if (e.target.files[0]) handleFile(e.target.files[0]);
+    };
 
-/**
- * Копирует номер заказа в буфер обмена
- */
-function copyOrderNumber() {
-    const orderNumber = document.getElementById('orderNumber').textContent;
-    if (orderNumber === 'Будет сгенерирован') return;
-
-    navigator.clipboard.writeText(orderNumber).then(() => {
-        showNotification('Номер заказа скопирован! ?', 'success');
-    }).catch(() => {
-        showNotification('Ошибка при копировании', 'error');
-    });
-}
-
-/* ==================== РАБОТА С СПОСОБОМ ОПЛАТЫ ==================== */
-
-/**
- * Показывает информацию о выбранном методе оплаты
- */
-async function updatePaymentInfo(paymentMethodId) {
-    if (!paymentMethodId) {
-        document.getElementById('paymentInfoGroup').style.display = 'none';
-        return;
-    }
-
-    try {
-        const response = await fetch(CONFIG.BANKS_FILE);
-        const data = await response.json();
-        const method = data.payment_methods.find(m => m.id === paymentMethodId);
-
-        if (method) {
-            displayPaymentCard(method);
-            document.getElementById('paymentInfoGroup').style.display = 'block';
+    document.getElementById('paymentMethod').onchange = (e) => {
+        const cardInfo = document.getElementById('paymentCardInfo');
+        if (e.target.value === 'Humo') {
+            cardInfo.style.display = 'block';
+            cardInfo.innerHTML = `
+                <div style="background: #222; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                    <div style="color: #888; font-size: 12px;">HUMO CARD</div>
+                    <div style="font-size: 18px; letter-spacing: 2px; margin: 5px 0;">9860 1417 1512 8007</div>
+                    <div style="color: #fff;">SAFIYEV TEMUR</div>
+                    <button type="button" onclick="navigator.clipboard.writeText('9860141715128007')" style="background:none; border:1px solid #444; color:#aaa; padding:5px 10px; border-radius:4px; margin-top:10px; cursor:pointer; font-size:12px;">РљРѕРїРёСЂРѕРІР°С‚СЊ</button>
+                </div>
+            `;
+        } else {
+            cardInfo.style.display = 'none';
         }
-    } catch (error) {
-        console.error('? Ошибка при загрузке информации о платеже:', error);
-    }
-}
+    };
 
-/**
- * Отображает карточку платежного метода
- */
-function displayPaymentCard(method) {
-    const cardInfo = document.getElementById('paymentCardInfo');
-    
-    let paymentDetails = `
-        <h4>?? ${method.name}</h4>
-    `;
-
-    if (method.card_number) {
-        paymentDetails += `
-            <div class="payment-detail">
-                <label>Номер карты:</label>
-                <span>${method.card_number}</span>
-            </div>
-            <div class="payment-detail">
-                <label>Банк:</label>
-                <span>${method.bank_name}</span>
-            </div>
-            <div class="payment-detail">
-                <label>Владелец:</label>
-                <span>${method.cardholder}</span>
-            </div>
-        `;
-    }
-
-    if (method.phone_number) {
-        paymentDetails += `
-            <div class="payment-detail">
-                <label>Номер телефона:</label>
-                <span>${method.phone_number}</span>
-            </div>
-        `;
-    }
-
-    if (method.commission > 0) {
-        paymentDetails += `
-            <div class="payment-detail">
-                <label>Комиссия:</label>
-                <span>${method.commission}%</span>
-            </div>
-        `;
-    }
-
-    paymentDetails += `
-        <div class="payment-instruction">
-            ?? ${method.instruction}
-        </div>
-    `;
-
-    cardInfo.innerHTML = paymentDetails;
-}
-
-/* ==================== РАБОТА С ЗАГРУЗКОЙ ФАЙЛОВ ==================== */
-
-/**
- * Настраивает загрузку файлов
- */
-function setupFileUpload() {
-    const uploadArea = document.getElementById('uploadArea');
-    const screenshotInput = document.getElementById('screenshotInput');
-    const uploadButton = uploadArea.querySelector('.upload-button');
-
-    // Клик по кнопке загрузки
-    uploadButton.addEventListener('click', (e) => {
+    document.getElementById('orderForm').onsubmit = async (e) => {
         e.preventDefault();
-        screenshotInput.click();
-    });
+        if (!state.selected || !state.file) return alert('Р’С‹Р±РµСЂРёС‚Рµ РїР°РєРµС‚ Рё СЃРєСЂРёРЅС€РѕС‚');
 
-    // Выбор файла
-    screenshotInput.addEventListener('change', handleFileSelect);
+        const btn = e.target.querySelector('.submit-btn');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'РћР±СЂР°Р±РѕС‚РєР°...';
 
-    // Drag and Drop
-    uploadArea.addEventListener('dragover', handleDragOver);
-    uploadArea.addEventListener('dragleave', handleDragLeave);
-    uploadArea.addEventListener('drop', handleFileDrop);
+        try {
+            const data = {
+                telegramUsername: document.getElementById('telegramUsername').value,
+                stars: state.selected.stars,
+                amount: state.selected.price,
+                paymentMethod: 'Humo',
+                screenshot: await toBase64(state.file)
+            };
 
-    // Удаление изображения
-    document.getElementById('removeImage').addEventListener('click', (e) => {
-        e.preventDefault();
-        screenshotInput.value = '';
-        document.getElementById('uploadPreview').style.display = 'none';
-        uploadArea.style.display = 'block';
-    });
+            const res = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            const json = await res.json();
+            if (json.success) {
+                document.body.innerHTML = `
+                    <div style="text-align:center; padding: 100px; color: #fff;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto; fill: #ffffff;">${ICONS.check}</div>
+                        <h1>Р—Р°РєР°Р· РїСЂРёРЅСЏС‚!</h1>
+                        <p>Р’Р°С€ РЅРѕРјРµСЂ: <code>${json.orderId}</code></p>
+                        <p>РњС‹ РїСЂРѕРІРµСЂРёРј РѕРїР»Р°С‚Сѓ Рё Р·Р°С‡РёСЃР»РёРј Stars РІ С‚РµС‡РµРЅРёРµ 15 РјРёРЅСѓС‚.</p>
+                        <button onclick="location.reload()" style="background:#333; color:#fff; padding:10px 20px; border:none; margin-top:20px; cursor:pointer; border-radius:8px;">Р’РµСЂРЅСѓС‚СЊСЃСЏ</button>
+                    </div>
+                `;
+            } else {
+                alert('РћС€РёР±РєР°: ' + (json.error || 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('РћС€РёР±РєР° СЃРµС‚Рё РёР»Рё СЃРµСЂРІРµСЂР°');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    };
 }
 
-function handleDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.classList.add('drag-over');
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.classList.remove('drag-over');
-}
-
-function handleFileDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.classList.remove('drag-over');
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        document.getElementById('screenshotInput').files = files;
-        handleFileSelect({ target: { files } });
-    }
-}
-
-function handleFileSelect(e) {
-    const file = e.target.files[0];
-    
-    if (!file) return;
-
-    // Проверка типа файла
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-        showNotification('Неверный формат файла. Допустимы: JPG, PNG, WebP', 'error');
-        e.target.value = '';
-        return;
-    }
-
-    // Проверка размера (10 МБ)
-    if (file.size > 10 * 1024 * 1024) {
-        showNotification('Размер файла превышает 10 МБ', 'error');
-        e.target.value = '';
-        return;
-    }
-
-    // Показываем превью
+function handleFile(file) {
+    state.file = file;
+    document.querySelector('.upload-text').innerText = file.name;
+    // Preview
     const reader = new FileReader();
-    reader.onload = (event) => {
-        const previewImage = document.getElementById('previewImage');
-        previewImage.src = event.target.result;
-        
-        document.getElementById('uploadArea').style.display = 'none';
-        document.getElementById('uploadPreview').style.display = 'block';
+    reader.onload = (e) => {
+        document.querySelector('.upload-icon').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`;
     };
     reader.readAsDataURL(file);
 }
 
-/* ==================== РАБОТА С FAQ ==================== */
-
-/**
- * Настраивает FAQ аккордеон
- */
-function setupFAQ() {
-    document.querySelectorAll('.faq-question').forEach(button => {
-        button.addEventListener('click', () => {
-            const faqItem = button.parentElement;
-            const isActive = button.classList.contains('active');
-
-            // Закрываем все
-            document.querySelectorAll('.faq-question').forEach(btn => {
-                btn.classList.remove('active');
-                btn.nextElementSibling.classList.remove('show');
-            });
-
-            // Открываем текущий
-            if (!isActive) {
-                button.classList.add('active');
-                button.nextElementSibling.classList.add('show');
-            }
-        });
-    });
+function formatPrice(p) {
+    return new Intl.NumberFormat('ru-RU').format(p);
 }
 
-/* ==================== РАБОТА С ФОРМОЙ ==================== */
-
-/**
- * Настраивает обработчики формы
- */
-function setupFormHandlers() {
-    const orderForm = document.getElementById('orderForm');
-    const paymentMethod = document.getElementById('paymentMethod');
-    const copyButton = document.getElementById('copyOrderNumber');
-
-    paymentMethod.addEventListener('change', (e) => {
-        updatePaymentInfo(e.target.value);
-    });
-
-    copyButton.addEventListener('click', copyOrderNumber);
-
-    orderForm.addEventListener('submit', handleFormSubmit);
-}
-
-/**
- * Обработчик отправки формы
- */
-async function handleFormSubmit(e) {
-    e.preventDefault();
-
-    // Валидация
-    if (!validateForm()) {
-        return;
-    }
-
-    // Получаем данные формы
-    const formData = new FormData(document.getElementById('orderForm'));
-    const screenshot = formData.get('screenshot');
-
-    // Создаем объект заказа
-    const orderData = {
-        orderNumber: document.getElementById('orderNumber').textContent,
-        telegramUsername: formData.get('telegramUsername'),
-        stars: formData.get('stars'),
-        uzs_price: formData.get('price'),
-        paymentMethod: formData.get('paymentMethod'),
-        timestamp: new Date().toISOString(),
-        status: 'pending'
-    };
-
-    try {
-        // Показываем загрузку
-        const submitButton = document.getElementById('submitButton');
-        submitButton.disabled = true;
-        document.getElementById('loadingSpinner').style.display = 'inline-block';
-
-        // Отправляем заказ на сервер
-        const response = await fetch(`${CONFIG.API_BASE_URL}/process-order`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                ...orderData,
-                // Скриншот кодируем в base64
-                screenshot: await fileToBase64(screenshot)
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            showOrderSuccess(orderData);
-            localStorage.setItem(STORAGE_KEYS.CURRENT_ORDER, JSON.stringify(orderData));
-            
-            // Сбрасываем форму
-            document.getElementById('orderForm').reset();
-            document.getElementById('uploadPreview').style.display = 'none';
-            document.getElementById('uploadArea').style.display = 'block';
-            document.getElementById('selectedPackageInfo').textContent = 'Выберите пакет выше';
-        } else {
-            showNotification(result.message || 'Ошибка при обработке заказа', 'error');
-        }
-    } catch (error) {
-        console.error('? Ошибка при отправке заказа:', error);
-        showNotification('Ошибка при отправке заказа. Попробуйте позже.', 'error');
-    } finally {
-        const submitButton = document.getElementById('submitButton');
-        submitButton.disabled = false;
-        document.getElementById('loadingSpinner').style.display = 'none';
-    }
-}
-
-/**
- * Валидирует форму перед отправкой
- */
-function validateForm() {
-    const username = document.getElementById('telegramUsername').value.trim();
-    const packageId = document.getElementById('selectedPackage').value;
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    const screenshot = document.getElementById('screenshotInput').value;
-    const agreeTerms = document.getElementById('agreeTerms').checked;
-
-    // Проверяем Telegram username
-    if (!username || !username.match(/^[a-zA-Z0-9_]{5,32}$/)) {
-        showNotification('Некорректный Telegram username. Должен быть от 5 до 32 символов', 'error');
-        return false;
-    }
-
-    // Проверяем выбор пакета
-    if (!packageId) {
-        showNotification('Выберите пакет Stars', 'error');
-        return false;
-    }
-
-    // Проверяем выбор способа оплаты
-    if (!paymentMethod) {
-        showNotification('Выберите способ оплаты', 'error');
-        return false;
-    }
-
-    // Проверяем скриншот
-    if (!screenshot) {
-        showNotification('Загрузите скриншот оплаты', 'error');
-        return false;
-    }
-
-    // Проверяем согласие с условиями
-    if (!agreeTerms) {
-        showNotification('Согласитесь с условиями и положениями', 'error');
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * Показывает сообщение об успешном заказе
- */
-function showOrderSuccess(orderData) {
-    const statusCard = document.getElementById('statusCard');
-    
-    statusCard.className = 'status-card pending';
-    statusCard.innerHTML = `
-        <div class="status-header">
-            <div class="status-icon">?</div>
-            <div>
-                <div class="status-title">Заказ принят!</div>
-            </div>
-        </div>
-        <ul class="status-details">
-            <li>
-                <span class="status-label">Номер заказа:</span>
-                <strong>${orderData.orderNumber}</strong>
-            </li>
-            <li>
-                <span class="status-label">Stars:</span>
-                <strong>${orderData.stars}</strong>
-            </li>
-            <li>
-                <span class="status-label">Сумма:</span>
-                <strong>${formatNumber(orderData.uzs_price)} сум</strong>
-            </li>
-            <li>
-                <span class="status-label">Статус:</span>
-                <strong style="color: #ff9800;">? Ожидание подтверждения</strong>
-            </li>
-            <li>
-                <span class="status-label">Время:</span>
-                <strong>${new Date(orderData.timestamp).toLocaleString('ru-RU')}</strong>
-            </li>
-        </ul>
-        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); font-size: 13px; color: #666;">
-            ? Админ получил уведомление о вашем заказе<br>
-            ? Вы получите уведомление в Telegram при обработке<br>
-            ? Stars придут в течение 5-15 минут после подтверждения
-        </div>
-    `;
-
-    document.getElementById('orderStatus').style.display = 'block';
-    document.getElementById('orderStatus').scrollIntoView({ behavior: 'smooth' });
-
-    showNotification('Заказ успешно отправлен! ?', 'success');
-}
-
-/* ==================== УТИЛИТЫ ==================== */
-
-/**
- * Форматирует число с разделителем тысяч
- */
-function formatNumber(num) {
-    return new Intl.NumberFormat('ru-RU').format(num);
-}
-
-/**
- * Конвертирует файл в Base64
- */
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
+function toBase64(file) {
+    return new Promise((r, j) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onload = () => r(reader.result);
+        reader.onerror = j;
     });
 }
-
-/**
- * Показывает уведомление
- */
-function showNotification(message, type = 'info') {
-    const container = document.getElementById('notifications');
-    
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-
-    container.appendChild(notification);
-
-    // Автоматически удаляем через 5 секунд
-    setTimeout(() => {
-        notification.classList.add('removing');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 5000);
-
-    return notification;
-}
-
-/**
- * Восстанавливает состояние заказа из localStorage
- */
-function restoreOrderState() {
-    const currentOrder = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_ORDER) || '{}');
-    
-    if (currentOrder.orderNumber) {
-        document.getElementById('orderNumber').textContent = currentOrder.orderNumber;
-    }
-}
-
-/* ==================== ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ ==================== */
-
-function setupEventListeners() {
-    setupFileUpload();
-    setupFAQ();
-    setupFormHandlers();
-}
-
-console.log('? script.js загружен успешно');

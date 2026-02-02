@@ -1,7 +1,7 @@
 {
   "app_name": "Telegram Stars Shop",
   "app_version": "1.0.0",
-  "currency": "UZS",
+  "currency": "uzs",
   "timezone": "Asia/Tashkent",
   "language": "ru",
   "supported_languages": ["ru", "uz"],
